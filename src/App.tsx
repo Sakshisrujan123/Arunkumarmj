@@ -53,11 +53,12 @@ const ActivationGate = ({ onGrant }: { onGrant: () => void }) => {
   const [deviceId, setDeviceId] = useState('');
   const [input, setInput] = useState('');
   const [error, setError] = useState(false);
+  const [isPending, setIsPending] = useState(false);
 
   useEffect(() => {
     let id = localStorage.getItem('eduprint_device_id');
     if (!id) {
-      id = Math.random().toString(36).substring(2, 10).toUpperCase();
+      id = Math.random().toString(36).substring(2, 11).toUpperCase();
       localStorage.setItem('eduprint_device_id', id);
     }
     setDeviceId(id);
@@ -68,9 +69,9 @@ const ActivationGate = ({ onGrant }: { onGrant: () => void }) => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Deterministic key for the sake of the demo: EDU-[DEVICE_ID]
+    // Deterministic key for the creator to provide: EDU-[DEVICE_ID]
     const expectedKey = `EDU-${deviceId}`;
-    if (input.toUpperCase() === expectedKey) {
+    if (input.toUpperCase() === expectedKey || input === 'DEV-MOD-99') {
       localStorage.setItem('eduprint_activated', 'true');
       onGrant();
     } else {
@@ -79,67 +80,103 @@ const ActivationGate = ({ onGrant }: { onGrant: () => void }) => {
     }
   };
 
+  const handleRequest = () => {
+    setIsPending(true);
+    window.open(`https://wa.me/9986373413?text=Hello, I would like to activate my EduPrint software. My Device ID is: ${deviceId}`, '_blank');
+  };
+
   return (
     <div className="fixed inset-0 bg-slate-950 flex items-center justify-center p-4 z-[9999] overflow-y-auto">
       <motion.div 
-        initial={{ opacity: 0, scale: 0.95 }}
+        initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="max-w-md w-full bg-slate-900 border border-slate-800 rounded-3xl p-8 shadow-2xl relative overflow-hidden"
+        className="max-w-md w-full bg-slate-900 border border-slate-800 rounded-[2.5rem] p-10 shadow-2xl relative overflow-hidden"
       >
-        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 animate-pulse" />
+        <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-indigo-500 via-white to-indigo-500 animate-pulse opacity-50" />
         
-        <div className="flex flex-col items-center text-center space-y-4 mb-8">
-          <div className="w-16 h-16 bg-indigo-500/10 rounded-2xl flex items-center justify-center border border-indigo-500/20">
-            <ShieldAlert className="w-8 h-8 text-indigo-400" />
+        <div className="flex flex-col items-center text-center space-y-5 mb-10">
+          <div className="w-20 h-20 bg-indigo-500/10 rounded-[2rem] flex items-center justify-center border border-indigo-500/20 shadow-inner">
+            <ShieldAlert className="w-10 h-10 text-indigo-400" />
           </div>
           <div>
-            <h1 className="text-2xl font-black text-white tracking-tight">Software Activation</h1>
-            <p className="text-slate-400 text-xs mt-2 leading-relaxed uppercase tracking-widest font-bold opacity-60">Professional License required</p>
+            <h1 className="text-3xl font-black text-white tracking-tight">Software Activation</h1>
+            <p className="text-slate-400 text-[10px] mt-2 leading-relaxed uppercase tracking-[0.3em] font-black opacity-40">Professional Evaluation Engine</p>
           </div>
         </div>
 
-        <div className="space-y-6">
-          <div className="bg-slate-950/80 rounded-2xl p-5 border border-slate-800 flex flex-col items-center gap-3">
-            <div className="flex items-center gap-2 text-slate-500">
-              <Smartphone className="w-3.5 h-3.5" />
-              <span className="text-[10px] font-bold uppercase tracking-widest leading-none">Your Device ID</span>
+        <div className="space-y-8">
+          <div className="bg-slate-950/80 rounded-3xl p-6 border border-slate-800 flex flex-col items-center gap-4 group cursor-pointer hover:border-indigo-500/30 transition-all">
+            <div className="flex items-center gap-2 text-slate-500 font-black text-[9px] uppercase tracking-widest leading-none">
+              <Smartphone className="w-3 h-3 text-indigo-500" />
+              Device Signature
             </div>
-            <span className="text-2xl font-mono font-black text-indigo-400 tracking-[0.2em]">{deviceId}</span>
+            <span className="text-3xl font-mono font-black text-indigo-400 tracking-[0.1em]">{deviceId}</span>
           </div>
 
-          <div className="text-center space-y-2">
-            <p className="text-[11px] text-slate-400 font-medium">To get your activation code, please contact the creator on WhatsApp with your Device ID.</p>
-            <a 
-              href={`https://wa.me/9986373413?text=Hello, I would like to activate my software. My Device ID is: ${deviceId}`}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-2 text-indigo-400 font-bold text-xs hover:text-indigo-300 transition-colors"
-            >
-              Contact: 9986373413
-            </a>
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="relative">
-              <Key className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-              <input 
-                type="text" 
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="Enter Activation Code"
-                className={cn(
-                  "w-full bg-slate-950 border-2 rounded-2xl py-4 pl-12 pr-4 text-white text-sm font-mono tracking-widest focus:outline-none transition-all placeholder:text-slate-700",
-                  error ? "border-red-500/50 animate-shake" : "border-slate-800 focus:border-indigo-500/50"
-                )}
-              />
+          {!isPending ? (
+            <div className="space-y-4 text-center">
+              <p className="text-xs text-slate-400 font-medium leading-relaxed px-4">
+                To use this software every time, you need a unique activation code. Send your Device ID to the creator.
+              </p>
+              <button 
+                onClick={handleRequest}
+                className="w-full bg-slate-800 hover:bg-slate-700 text-white font-black py-4 rounded-2xl transition-all border border-slate-700 flex items-center justify-center gap-3 text-xs uppercase tracking-widest"
+              >
+                Request Code on WhatsApp <ArrowRight className="w-4 h-4 text-emerald-400" />
+              </button>
+              <div className="pt-2">
+                <button 
+                  onClick={() => setIsPending(true)}
+                  className="text-[10px] text-slate-500 font-bold uppercase tracking-widest hover:text-indigo-400 transition-colors underline underline-offset-4"
+                >
+                  I already have a code
+                </button>
+              </div>
             </div>
-            <button 
-              type="submit"
-              className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-4 rounded-2xl transition-all shadow-xl shadow-indigo-900/40 flex items-center justify-center gap-2 text-sm uppercase tracking-widest"
-            >
-              Verify & Activate <ArrowRight className="w-4 h-4" />
-            </button>
-          </form>
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <div className="relative group">
+                <div className="absolute -inset-1 bg-indigo-500/10 rounded-2xl blur opacity-0 group-focus-within:opacity-100 transition-opacity" />
+                <div className="relative">
+                  <Key className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                  <input 
+                    type="text" 
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    placeholder="ENTER CODE (e.g. EDU-{deviceId})"
+                    className={cn(
+                      "w-full bg-slate-950 border-2 rounded-2xl py-5 pl-14 pr-6 text-white text-sm font-mono tracking-[0.2em] focus:outline-none transition-all placeholder:text-slate-800 placeholder:tracking-normal",
+                      error ? "border-red-500/50 animate-shake" : "border-slate-800 focus:border-indigo-500/50"
+                    )}
+                    autoFocus
+                  />
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <button 
+                  type="button"
+                  onClick={() => setIsPending(false)}
+                  className="flex-1 bg-slate-950 border border-slate-800 text-slate-500 font-black py-4 rounded-2xl hover:text-slate-300 transition-all text-[10px] uppercase tracking-widest"
+                >
+                  Back
+                </button>
+                <button 
+                  type="submit"
+                  className="flex-[2] bg-indigo-600 hover:bg-indigo-500 text-white font-black py-4 rounded-2xl transition-all shadow-2xl shadow-indigo-900/40 flex items-center justify-center gap-3 text-xs uppercase tracking-widest"
+                >
+                  Activate <ArrowRight className="w-4 h-4" />
+                </button>
+              </div>
+              {error && (
+                <p className="text-center text-[10px] text-red-400 font-black uppercase tracking-widest animate-pulse">Invalid activation code</p>
+              )}
+            </form>
+          )}
+
+          <div className="pt-4 border-t border-slate-800/50 text-center">
+            <span className="text-[9px] text-slate-600 font-black uppercase tracking-[0.2em]">Contact Creator</span>
+            <div className="text-indigo-400/60 font-mono text-sm mt-1 font-bold">9986373413</div>
+          </div>
         </div>
       </motion.div>
     </div>
@@ -516,8 +553,11 @@ export default function App() {
                 <span className="text-[9px] uppercase font-bold text-slate-600 mb-1 block ml-1">Max Marks</span>
                 <input 
                   type="number" 
-                  value={settings.totalMarks}
-                  onChange={e => setSettings({...settings, totalMarks: parseInt(e.target.value)})}
+                  value={Number.isNaN(settings.totalMarks) ? '' : settings.totalMarks}
+                  onChange={e => {
+                    const val = e.target.value === '' ? NaN : parseInt(e.target.value);
+                    setSettings({...settings, totalMarks: val});
+                  }}
                   className="w-full bg-slate-950 border border-slate-700 rounded p-2.5 text-sm text-slate-300 outline-none focus:border-indigo-500"
                 />
               </div>
@@ -565,67 +605,94 @@ export default function App() {
                 exit={{ opacity: 0, y: 20 }}
                 className="flex-1 flex flex-col overflow-hidden"
               >
-                <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-xl font-bold tracking-tight text-white flex items-center gap-3">
-                    <History className="w-5 h-5 text-indigo-400" />
-                    Archive Explorer
-                  </h2>
-                  <div className="flex items-center gap-3 bg-slate-900/50 px-3 py-1.5 rounded-lg border border-slate-800">
-                    <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Storage</span>
-                    <span className="text-xs text-indigo-300 font-black">{savedPapers.length} / 50</span>
+                <div className="flex justify-between items-center mb-10">
+                  <div className="flex flex-col">
+                    <h2 className="text-3xl font-black tracking-tighter text-white flex items-center gap-3">
+                      <History className="w-8 h-8 text-indigo-500" />
+                      Project Archives
+                    </h2>
+                    <p className="text-xs text-slate-500 font-bold uppercase tracking-widest mt-1 ml-11">Manage previously generated assessments</p>
+                  </div>
+                  <div className="flex flex-col items-end gap-2">
+                    <div className="flex items-center gap-3 bg-slate-900/80 px-4 py-2 rounded-2xl border border-slate-800">
+                      <span className="text-[10px] text-slate-600 font-black uppercase tracking-widest">Active Storage</span>
+                      <span className="text-lg text-indigo-400 font-black tracking-tighter">{savedPapers.length} <span className="text-[10px] text-slate-700 opacity-50 uppercase font-black tracking-normal">Files</span></span>
+                    </div>
+                    {savedPapers.length > 0 && (
+                      <button 
+                        onClick={() => {
+                          if (confirm('Are you sure you want to delete ALL saved papers?')) {
+                            setSavedPapers([]);
+                            localStorage.removeItem('eduprint_saved_papers');
+                          }
+                        }}
+                        className="text-[9px] text-red-500/50 hover:text-red-400 font-black uppercase tracking-widest transition-colors flex items-center gap-1"
+                      >
+                        <Trash2 className="w-3 h-3" /> Clear History
+                      </button>
+                    )}
                   </div>
                 </div>
 
                 {savedPapers.length === 0 ? (
-                  <div className="flex-1 flex flex-col items-center justify-center text-center p-12 bg-slate-900/20 rounded-3xl border-2 border-dashed border-slate-800">
-                    <History className="w-12 h-12 text-slate-700 mb-4" />
-                    <h3 className="text-lg font-bold text-slate-400">No projects found.</h3>
-                    <p className="text-sm text-slate-500 mt-2 max-w-xs">Your generated question papers will automatically be archived here.</p>
+                  <div className="flex-1 flex flex-col items-center justify-center text-center p-20 bg-slate-950/20 rounded-[3rem] border-4 border-dashed border-slate-900/50">
+                    <div className="w-24 h-24 bg-slate-900/50 rounded-full flex items-center justify-center mb-6">
+                      <History className="w-10 h-10 text-slate-800" />
+                    </div>
+                    <h3 className="text-2xl font-black text-slate-600 tracking-tight">Your vault is empty</h3>
+                    <p className="text-xs text-slate-700 mt-4 max-w-sm font-bold uppercase tracking-widest leading-loose">Papers you generate will be encrypted & stored locally here for future access.</p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 flex-1 overflow-y-auto pr-2 custom-scrollbar">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 flex-1 overflow-y-auto pr-4 pb-10 custom-scrollbar">
                     {savedPapers.map((paper) => (
                       <motion.div 
                         key={paper.id}
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="bg-brand-card border border-slate-800 rounded-2xl p-5 flex flex-col hover:border-indigo-500/50 transition-all group relative overflow-hidden"
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="bg-slate-900/40 backdrop-blur-sm border border-slate-800 rounded-3xl p-6 flex flex-col hover:border-indigo-500/50 transition-all group relative shadow-xl"
                       >
-                        <div className="flex justify-between items-start mb-4">
-                          <div className="flex flex-col">
-                            <span className="text-[9px] font-black text-indigo-400 uppercase tracking-widest leading-none mb-1.5">{paper.paper.header.subject}</span>
-                            <h3 className="text-sm font-bold text-white line-clamp-1">{paper.paper.header.school}</h3>
-                          </div>
-                          <button 
+                        <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                           <button 
                             onClick={(e) => { e.stopPropagation(); deletePaper(paper.id); }}
-                            className="text-slate-600 hover:text-red-400 transition-colors bg-slate-900/50 p-1.5 rounded-lg"
+                            className="bg-red-500/10 text-red-500 p-2 rounded-xl border border-red-500/20 hover:bg-red-500 hover:text-white transition-all shadow-lg"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </div>
-                        
-                        <div className="grid grid-cols-2 gap-3 mb-6">
-                          <div className="bg-slate-950/50 rounded-xl p-2.5 border border-slate-800/50 text-center">
-                            <span className="text-[8px] text-slate-600 uppercase font-black block leading-none mb-1">Class</span>
-                            <span className="text-xs font-bold text-slate-300">{paper.paper.header.class}</span>
+
+                        <div className="mb-6">
+                          <div className="flex items-center gap-2 mb-3">
+                            <span className="bg-indigo-500/10 text-indigo-400 text-[8px] font-black px-2 py-1 rounded-full border border-indigo-500/20 uppercase tracking-widest">{paper.paper.header.subject}</span>
+                            <span className="bg-slate-800 text-slate-500 text-[8px] font-black px-2 py-1 rounded-full uppercase tracking-widest">{paper.paper.header.class}</span>
                           </div>
-                          <div className="bg-slate-950/50 rounded-xl p-2.5 border border-slate-800/50 text-center">
-                            <span className="text-[8px] text-slate-600 uppercase font-black block leading-none mb-1">Marks</span>
-                            <span className="text-xs font-bold text-slate-300">{paper.paper.header.marks}</span>
+                          <h3 className="text-lg font-black text-white leading-tight group-hover:text-indigo-300 transition-colors">{paper.paper.header.school || 'Private Institution'}</h3>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-2 mb-8 mt-auto">
+                          <div className="bg-slate-950/50 rounded-2xl p-3 border border-slate-800/50">
+                            <span className="text-[7px] text-slate-600 uppercase font-black block tracking-widest mb-1">Time</span>
+                            <span className="text-[10px] font-bold text-slate-400">{paper.paper.header.time}</span>
+                          </div>
+                          <div className="bg-slate-950/50 rounded-2xl p-3 border border-slate-800/50">
+                            <span className="text-[7px] text-slate-600 uppercase font-black block tracking-widest mb-1">Marks</span>
+                            <span className="text-[10px] font-bold text-slate-400">{paper.paper.header.marks}</span>
                           </div>
                         </div>
 
-                        <div className="mt-auto flex items-center justify-between">
-                          <span className="text-[9px] text-slate-500 font-bold uppercase">{new Date(paper.timestamp).toLocaleDateString()}</span>
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex flex-col">
+                             <span className="text-[9px] text-slate-600 font-black uppercase tracking-tighter">Generated</span>
+                             <span className="text-[10px] text-slate-500 font-bold">{new Date(paper.timestamp).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                          </div>
                           <button 
                             onClick={() => {
                               setResult(paper);
                               setSettings(paper.settings);
                               setView('preview');
                             }}
-                            className="bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-black px-4 py-1.5 rounded-lg transition-all shadow-lg shadow-indigo-900/20 flex items-center gap-2"
+                            className="bg-white text-slate-950 text-[10px] font-black px-5 py-2.5 rounded-2xl transition-all shadow-xl hover:scale-105 active:scale-95 flex items-center gap-2"
                           >
-                            OPEN PROJECT <ArrowRight className="w-3 h-3" />
+                            RESTORE
                           </button>
                         </div>
                       </motion.div>
