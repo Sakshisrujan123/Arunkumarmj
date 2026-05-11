@@ -1,0 +1,17 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Lora", ui-serif, Georgia, serif;
+  --font-display: "Playfair Display", serif;
+  
+  --color-brand-bg: #0b0d11;
+  --color-brand-panel: #16191f;
+  --color-brand-card: #1c2128;
+}
+
+@layer base {
+  body {
+    @apply font-sans bg-brand-bg text-slate-200;
+  }
+}

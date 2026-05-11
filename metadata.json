@@ -1,0 +1,6 @@
+{
+  "name": "EduPrint AI - Question Paper Generator",
+  "description": "Professional AI-powered question paper generator for grades 1-12 across multiple boards and Indian languages with PDF and Word export.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["AI-powered content generation", "PDF/Word Export", "Multilingual Support"]
+}
