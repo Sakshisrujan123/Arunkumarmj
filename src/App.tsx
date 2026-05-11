@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ShieldAlert, Key, ArrowRight, Printer, FileDown, Settings2, Sparkles, BookOpen, GraduationCap, Languages, Image as ImageIcon } from 'lucide-react';
+import { ShieldAlert, Key, ArrowRight, Printer, FileDown, Settings2, Sparkles, BookOpen, GraduationCap, Languages, Image as ImageIcon, History, Trash2, Smartphone, Download } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { generateQuestionPaper } from '@/lib/gemini';
 import jsPDF from 'jspdf';
@@ -40,20 +40,38 @@ interface Solution {
 }
 
 interface GenerationResult {
+  id: string;
+  timestamp: number;
   paper: PaperData;
   solutions: Solution[];
+  settings: any;
 }
 
 // --- Components ---
 
-const PasscodeGate = ({ onGrant }: { onGrant: () => void }) => {
-  const [sessionPin] = useState(() => Math.floor(1000 + Math.random() * 9000).toString());
+const ActivationGate = ({ onGrant }: { onGrant: () => void }) => {
+  const [deviceId, setDeviceId] = useState('');
   const [input, setInput] = useState('');
   const [error, setError] = useState(false);
 
+  useEffect(() => {
+    let id = localStorage.getItem('eduprint_device_id');
+    if (!id) {
+      id = Math.random().toString(36).substring(2, 10).toUpperCase();
+      localStorage.setItem('eduprint_device_id', id);
+    }
+    setDeviceId(id);
+
+    const isActivated = localStorage.getItem('eduprint_activated') === 'true';
+    if (isActivated) onGrant();
+  }, [onGrant]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (input === sessionPin) {
+    // Deterministic key for the sake of the demo: EDU-[DEVICE_ID]
+    const expectedKey = `EDU-${deviceId}`;
+    if (input.toUpperCase() === expectedKey) {
+      localStorage.setItem('eduprint_activated', 'true');
       onGrant();
     } else {
       setError(true);
@@ -62,49 +80,67 @@ const PasscodeGate = ({ onGrant }: { onGrant: () => void }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-zinc-950 flex items-center justify-center p-4 z-[9999]">
+    <div className="fixed inset-0 bg-slate-950 flex items-center justify-center p-4 z-[9999] overflow-y-auto">
       <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="max-w-md w-full bg-zinc-900 border border-zinc-800 rounded-3xl p-8 shadow-2xl space-y-8"
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="max-w-md w-full bg-slate-900 border border-slate-800 rounded-3xl p-8 shadow-2xl relative overflow-hidden"
       >
-        <div className="flex flex-col items-center text-center space-y-4">
-          <div className="w-16 h-16 bg-blue-500/20 rounded-2xl flex items-center justify-center">
-            <ShieldAlert className="w-8 h-8 text-blue-400" />
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 animate-pulse" />
+        
+        <div className="flex flex-col items-center text-center space-y-4 mb-8">
+          <div className="w-16 h-16 bg-indigo-500/10 rounded-2xl flex items-center justify-center border border-indigo-500/20">
+            <ShieldAlert className="w-8 h-8 text-indigo-400" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-white">Academic Gateway</h1>
-            <p className="text-zinc-400 text-sm mt-1">Please enter the security PIN shown below to proceed.</p>
+            <h1 className="text-2xl font-black text-white tracking-tight">Software Activation</h1>
+            <p className="text-slate-400 text-xs mt-2 leading-relaxed uppercase tracking-widest font-bold opacity-60">Professional License required</p>
           </div>
         </div>
 
-        <div className="bg-zinc-800/50 rounded-2xl p-6 text-center border border-zinc-700/50">
-          <span className="text-xs uppercase tracking-[0.2em] text-zinc-500 font-bold block mb-2">Today's Session Code</span>
-          <span className="text-4xl font-mono font-black text-blue-400 tracking-widest">{sessionPin}</span>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="relative">
-            <Key className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
-            <input 
-              type="text" 
-              maxLength={4}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="Enter PIN"
-              className={cn(
-                "w-full bg-zinc-800 border-2 rounded-2xl py-4 pl-12 pr-4 text-white text-xl font-mono tracking-[1em] focus:outline-none transition-all",
-                error ? "border-red-500/50 animate-shake" : "border-zinc-700 focus:border-blue-500/50"
-              )}
-            />
+        <div className="space-y-6">
+          <div className="bg-slate-950/80 rounded-2xl p-5 border border-slate-800 flex flex-col items-center gap-3">
+            <div className="flex items-center gap-2 text-slate-500">
+              <Smartphone className="w-3.5 h-3.5" />
+              <span className="text-[10px] font-bold uppercase tracking-widest leading-none">Your Device ID</span>
+            </div>
+            <span className="text-2xl font-mono font-black text-indigo-400 tracking-[0.2em]">{deviceId}</span>
           </div>
-          <button 
-            type="submit"
-            className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-2xl transition-all shadow-lg flex items-center justify-center gap-2"
-          >
-            Unlock Tool <ArrowRight className="w-5 h-5" />
-          </button>
-        </form>
+
+          <div className="text-center space-y-2">
+            <p className="text-[11px] text-slate-400 font-medium">To get your activation code, please contact the creator on WhatsApp with your Device ID.</p>
+            <a 
+              href={`https://wa.me/9986373413?text=Hello, I would like to activate my software. My Device ID is: ${deviceId}`}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-2 text-indigo-400 font-bold text-xs hover:text-indigo-300 transition-colors"
+            >
+              Contact: 9986373413
+            </a>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="relative">
+              <Key className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+              <input 
+                type="text" 
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder="Enter Activation Code"
+                className={cn(
+                  "w-full bg-slate-950 border-2 rounded-2xl py-4 pl-12 pr-4 text-white text-sm font-mono tracking-widest focus:outline-none transition-all placeholder:text-slate-700",
+                  error ? "border-red-500/50 animate-shake" : "border-slate-800 focus:border-indigo-500/50"
+                )}
+              />
+            </div>
+            <button 
+              type="submit"
+              className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-4 rounded-2xl transition-all shadow-xl shadow-indigo-900/40 flex items-center justify-center gap-2 text-sm uppercase tracking-widest"
+            >
+              Verify & Activate <ArrowRight className="w-4 h-4" />
+            </button>
+          </form>
+        </div>
       </motion.div>
     </div>
   );
@@ -114,7 +150,31 @@ export default function App() {
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<GenerationResult | null>(null);
-  const [view, setView] = useState<'config' | 'preview' | 'solutions'>('config');
+  const [view, setView] = useState<'config' | 'preview' | 'solutions' | 'files'>('config');
+  const [savedPapers, setSavedPapers] = useState<GenerationResult[]>([]);
+
+  useEffect(() => {
+    const saved = localStorage.getItem('eduprint_saved_papers');
+    if (saved) {
+      try {
+        setSavedPapers(JSON.parse(saved));
+      } catch (e) {
+        console.error("Failed to load saved papers", e);
+      }
+    }
+  }, []);
+
+  const savePaper = (paper: GenerationResult) => {
+    const updated = [paper, ...savedPapers];
+    setSavedPapers(updated);
+    localStorage.setItem('eduprint_saved_papers', JSON.stringify(updated));
+  };
+
+  const deletePaper = (id: string) => {
+    const updated = savedPapers.filter(p => p.id !== id);
+    setSavedPapers(updated);
+    localStorage.setItem('eduprint_saved_papers', JSON.stringify(updated));
+  };
 
   // Form State
   const [settings, setSettings] = useState({
@@ -153,7 +213,16 @@ export default function App() {
         questionDistribution: settings.distribution,
         duration: `${settings.duration} Hours`
       });
-      setResult(data);
+      
+      const resultWithMeta: GenerationResult = {
+        ...data,
+        id: Math.random().toString(36).substring(7),
+        timestamp: Date.now(),
+        settings: { ...settings }
+      };
+      
+      setResult(resultWithMeta);
+      savePaper(resultWithMeta);
       setView('preview');
     } catch (error) {
       alert("Failed to generate. Please check your connection and balance.");
@@ -194,7 +263,7 @@ export default function App() {
     URL.revokeObjectURL(url);
   };
 
-  if (!isUnlocked) return <PasscodeGate onGrant={() => setIsUnlocked(true)} />;
+  if (!isUnlocked) return <ActivationGate onGrant={() => setIsUnlocked(true)} />;
 
   return (
     <div className="h-screen w-full bg-brand-bg text-slate-200 flex flex-col overflow-hidden font-sans">
@@ -206,6 +275,19 @@ export default function App() {
         </div>
         
         <div className="flex items-center gap-4">
+          <button 
+            onClick={() => setView('files')}
+            className={cn(
+              "flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold transition-all border",
+              view === 'files' 
+                ? "bg-indigo-600 border-indigo-400 text-white" 
+                : "bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200"
+            )}
+          >
+            <History className="w-3.5 h-3.5" />
+            My Files
+          </button>
+
           {result && (
             <div className="flex bg-slate-900 p-1 rounded-md border border-slate-800 mr-4">
               <button 
@@ -475,6 +557,84 @@ export default function App() {
         {/* Main Panel: Question Structure or Preview */}
         <main className="flex-1 flex flex-col p-6 overflow-hidden bg-brand-bg relative">
           <AnimatePresence mode="wait">
+            {view === 'files' && (
+              <motion.div
+                key="files-view"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 20 }}
+                className="flex-1 flex flex-col overflow-hidden"
+              >
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-xl font-bold tracking-tight text-white flex items-center gap-3">
+                    <History className="w-5 h-5 text-indigo-400" />
+                    Archive Explorer
+                  </h2>
+                  <div className="flex items-center gap-3 bg-slate-900/50 px-3 py-1.5 rounded-lg border border-slate-800">
+                    <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Storage</span>
+                    <span className="text-xs text-indigo-300 font-black">{savedPapers.length} / 50</span>
+                  </div>
+                </div>
+
+                {savedPapers.length === 0 ? (
+                  <div className="flex-1 flex flex-col items-center justify-center text-center p-12 bg-slate-900/20 rounded-3xl border-2 border-dashed border-slate-800">
+                    <History className="w-12 h-12 text-slate-700 mb-4" />
+                    <h3 className="text-lg font-bold text-slate-400">No projects found.</h3>
+                    <p className="text-sm text-slate-500 mt-2 max-w-xs">Your generated question papers will automatically be archived here.</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 flex-1 overflow-y-auto pr-2 custom-scrollbar">
+                    {savedPapers.map((paper) => (
+                      <motion.div 
+                        key={paper.id}
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="bg-brand-card border border-slate-800 rounded-2xl p-5 flex flex-col hover:border-indigo-500/50 transition-all group relative overflow-hidden"
+                      >
+                        <div className="flex justify-between items-start mb-4">
+                          <div className="flex flex-col">
+                            <span className="text-[9px] font-black text-indigo-400 uppercase tracking-widest leading-none mb-1.5">{paper.paper.header.subject}</span>
+                            <h3 className="text-sm font-bold text-white line-clamp-1">{paper.paper.header.school}</h3>
+                          </div>
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); deletePaper(paper.id); }}
+                            className="text-slate-600 hover:text-red-400 transition-colors bg-slate-900/50 p-1.5 rounded-lg"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-3 mb-6">
+                          <div className="bg-slate-950/50 rounded-xl p-2.5 border border-slate-800/50 text-center">
+                            <span className="text-[8px] text-slate-600 uppercase font-black block leading-none mb-1">Class</span>
+                            <span className="text-xs font-bold text-slate-300">{paper.paper.header.class}</span>
+                          </div>
+                          <div className="bg-slate-950/50 rounded-xl p-2.5 border border-slate-800/50 text-center">
+                            <span className="text-[8px] text-slate-600 uppercase font-black block leading-none mb-1">Marks</span>
+                            <span className="text-xs font-bold text-slate-300">{paper.paper.header.marks}</span>
+                          </div>
+                        </div>
+
+                        <div className="mt-auto flex items-center justify-between">
+                          <span className="text-[9px] text-slate-500 font-bold uppercase">{new Date(paper.timestamp).toLocaleDateString()}</span>
+                          <button 
+                            onClick={() => {
+                              setResult(paper);
+                              setSettings(paper.settings);
+                              setView('preview');
+                            }}
+                            className="bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-black px-4 py-1.5 rounded-lg transition-all shadow-lg shadow-indigo-900/20 flex items-center gap-2"
+                          >
+                            OPEN PROJECT <ArrowRight className="w-3 h-3" />
+                          </button>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
+              </motion.div>
+            )}
+
             {view === 'config' && (
               <motion.div 
                 key="config-grid"
